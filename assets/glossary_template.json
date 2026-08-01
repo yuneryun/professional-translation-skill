@@ -1,0 +1,41 @@
+{
+  "medical_terms": {
+    "COVID-19": {
+      "translation": "新冠肺炎/COVID-19",
+      "context": "疾病名称；作病原体时用\"新冠病毒\"",
+      "avoid": "新型冠状病毒肺炎病毒（疾病名+病毒混用）",
+      "source": "",
+      "confirmed_by": ""
+    },
+    "SARS-CoV-2": {
+      "translation": "新冠病毒/SARS-CoV-2",
+      "context": "病原体",
+      "avoid": "",
+      "source": "",
+      "confirmed_by": ""
+    },
+    "gain-of-function research": {
+      "translation": "功能增益研究",
+      "context": "",
+      "avoid": "功能获得性研究",
+      "source": "",
+      "confirmed_by": ""
+    }
+  },
+  "people": {
+    "Anthony Fauci": {
+      "translation": "安东尼·福奇",
+      "context": "",
+      "source": "",
+      "confirmed_by": ""
+    }
+  },
+  "institutions": {
+    "CDC": {
+      "translation": "美国疾病控制与预防中心（首次）／疾控中心（后文）",
+      "context": "",
+      "source": "",
+      "confirmed_by": ""
+    }
+  }
+}
