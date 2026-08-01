@@ -15,6 +15,14 @@
 - **教训驱动**：核心规则全部来自实战中真实犯过的错误（增译、漏同步、丢格式、版本混乱等11类），每条规则都有对应的事故案例
 - **可追溯**：每个翻译决策都要求记录依据（时间/位置/原因/来源页码）
 
+### 实战项目概览
+
+![实战项目概览 1](assets/screenshots/project-overview-1.png)
+
+![实战项目概览 2](assets/screenshots/project-overview-2.png)
+
+![实战项目概览 3](assets/screenshots/project-overview-3.png)
+
 ---
 
 ## 包含内容
