@@ -35,11 +35,13 @@
 professional-translation/
 ├── SKILL.md                          # 触发说明 + 核心规则 + 四阶段工作流
 ├── scripts/                          # 可执行脚本（已测试）
+│   ├── assess_scanned_pdf.py         #   OCR 前质量评估（判型/DPI/清晰度/水印/语言）
 │   ├── docx_replace_text.py          #   docx 文本替换，保留 run 格式
 │   ├── normalize_dates.py            #   日期规范化（中文数字→阿拉伯，保护专名）
 │   └── make_version_readme.py        #   版本清单 + 修改日志生成器
 ├── references/                       # 参考文档（按需加载）
 │   ├── source-extraction.md          #   扫描PDF → 文字层 OCR 流水线
+│   ├── scanned-pdf-pipeline.md       #   OCR管线全流程 + 水印A/B实验 + 准确率预期
 │   ├── task-boundary.md              #   译前边界确认清单
 │   ├── review-checklists.md          #   四轮审校清单
 │   └── project-lessons.md            #   实战教训（11条错误→规则）
@@ -47,6 +49,38 @@ professional-translation/
     ├── glossary_template.json        #   术语表模板
     └── style_guide_template.md       #   风格指南模板
 ```
+
+---
+
+## v3.0 升级：扫描 PDF OCR 管线 + 逐阶段 QA 复核
+
+v3.0 将「扫描版 PDF 高准确率提取管线」融入本技能包，并引入**逐阶段复核关卡（QA Gate）**：每个阶段执行完毕后必须复核，**通过才进入下一步，不达标则带问题清单打回重做**。适用于医学/法律/学术等严谨文档的「扫描 PDF → 专业译稿」端到端场景。
+
+### 新增能力
+
+| 能力 | 说明 |
+|---|---|
+| **PDF 判型** | 全页遍历检测文本层：有文字层 → 直接提取（准确率 ≈100%，无需 OCR）；无 → 走 OCR 管线 |
+| **OCR 前质量评估** | 提取原始嵌入图（非低倍渲染）、DPI（≥300 优）、清晰度（Laplacian 方差 >500）、水印检测、语言探针——**先给用户准确率预期，再全量 OCR** |
+| **水印检测与处理（实测修正）** | 斜向浅灰水印用 Hough 直线 + 灰度采样检测（OCR 文本检测不到旋转水印）。**修正原「去水印」步骤：浅色水印（≤30% 透明度）不要 inpaint 去水印**——A/B 实测 inpaint 后 OCR 反而更差（`deluge`→`delur`、`World War II`→`Worlc var Il`）；直接带水印 OCR + LLM 纠错。仅深色覆盖型重水印才去，且须先 A/B 验证 |
+| **全量 OCR + 双引擎交叉验证** | RapidOCR 逐页识别（约 4 秒/页 CPU），5–10% 随机页用第二引擎（PaddleOCR/Tesseract）对比，**差异处逐个解决**；低置信度块（<0.9）全部列出 |
+| **带文字层 PDF 比对基准** | OCR 结果合并输出为带文字层 PDF，作为全程复核比对基准（OCR 会丢词漏句，复核必须回查） |
+| **逐阶段 QA 复核（QA Gate）** | 每阶段有明确通过标准与打回机制；复核产物留痕（每阶段出复核报告），全程可追溯 |
+| **数字零容忍** | 剂量/年份/百分比/日期/条款号 100% 核对——医学文档错一个数字即事故 |
+| **LLM 纠错** | 修复三类典型 OCR 错误：粘连单词（`knowssomeone`→`knows someone`）、大小写（`CoviD`→`COVID`）、水印污染字符（`Worlc`→`World`） |
+| **准确率实测数据** | 英文印刷体 342 DPI 扫描件：RapidOCR 平均置信度 98.4–98.5%（119 块 0 块 <0.9）；浅水印损失 ~0.5–1 点；LLM 纠错后 ~99%+；商业 OCR（ABBYY/Azure/Google）同类 99.5–99.8% |
+
+### 端到端流程（执行 → 🛂复核 → 通过才进下一步）
+
+```
+Phase 0 任务边界确认 🛂 → Phase 1 源提取(质量评估+OCR+双引擎验证) 🛂
+→ Phase 2 译前准备(术语表+风格指南) 🛂 → Phase 3 翻译 🛂
+→ Phase 4 四轮复核(双语→术语事实→单语→格式) 🛂 → Phase 5 交付(七项验收+人工终检)
+```
+
+- 每道 🛂 = 复核关卡：不通过 → 带问题清单打回上一阶段重做，不向下游流
+- 核心原则：**不猜测、不擅改、有依据、可复核**；主文件唯一真源；**最终验收权在用户**（交付前抽 3–5 页人工终检）
+- 完整细节见 `SKILL.md`、`references/scanned-pdf-pipeline.md`（含水印 A/B 实验记录）与 `scripts/assess_scanned_pdf.py`
 
 ---
 
@@ -138,6 +172,9 @@ professional-translation/
 ## 脚本用法
 
 ```bash
+# OCR 前质量评估（判型/DPI/清晰度/水印/语言探针，先给准确率预期再全量OCR）
+python3 scripts/assess_scanned_pdf.py <file.pdf> --pages 1,34,67
+
 # docx 文本替换（保留格式）
 python3 scripts/docx_replace_text.py <file.docx> <old_text> <new_text> [--all]
 
